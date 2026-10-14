@@ -1,6 +1,5 @@
 import type { TestConvex } from "convex-test";
 import type { GenericSchema, SchemaDefinition } from "convex/server";
-import { componentsGeneric } from "convex/server";
 import workflow from "@convex-dev/workflow/test";
 import type { ComponentApi } from "./component/_generated/component.js";
 import schema from "./component/schema.js";
@@ -17,8 +16,7 @@ function register(
   t: TestConvex<SchemaDefinition<GenericSchema, boolean>>,
   name: string = "workOSAuthKit"
 ) {
-  t.registerComponent(name, schema, modules);
   workflow.register(t, `${name}/backfillWorkflow`);
-  return componentsGeneric()[name] as unknown as ComponentApi;
+  return t.registerComponent(name, schema, modules) as unknown as ComponentApi;
 }
 export default { register, schema, modules };
