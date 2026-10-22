@@ -1,10 +1,14 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { describe, test, expect } from "vitest";
+import { createFunctionHandle, makeFunctionReference } from "convex/server";
+import { describe, test, expect, vi } from "vitest";
 import { modules } from "./setup.test.js";
 import schema from "./schema.js";
 import workflow from "@convex-dev/workflow/test";
 import { api } from "./_generated/api.js";
+import { mutation } from "./_generated/server.js";
+import { vEvent } from "./lib.js";
+import { v } from "convex/values";
 
 /** Default test user values. */
 const defaultUser = {
@@ -284,6 +288,58 @@ describe("onWebhookEvent", () => {
     expect(dbDeletedUsers).toHaveLength(1);
     expect(dbDeletedUsers[0].id).toBe(user.id);
   });
+
+  test.each([
+    { payload: "a full user", data: { object: "user", ...makeUser() } },
+    { payload: "only an id", data: { id: defaultUser.id } },
+  ])(
+    "user.deleted forwards $payload without a stored user",
+    async ({ data }) => {
+      const onEvent = vi.fn();
+      const t = convexTest(schema, {
+        ...modules,
+        "./callbacks.ts": async () => ({
+          onEvent: mutation({
+            args: { event: vEvent.fields.event, data: vEvent.fields.data },
+            returns: v.null(),
+            handler: async (_ctx, args) => {
+              onEvent(args);
+              return null;
+            },
+          }),
+        }),
+      });
+      const onEventHandle = await t.run(async () =>
+        createFunctionHandle(
+          makeFunctionReference<"mutation">("callbacks:onEvent")
+        )
+      );
+      const event = makeRawEvent("user.deleted", data);
+
+      await t.mutation(api.lib.onWebhookEvent, { event, onEventHandle });
+
+      expect(onEvent).toHaveBeenCalledExactlyOnceWith({
+        event: "user.deleted",
+        data,
+      });
+
+      await t.mutation(api.lib.onWebhookEvent, { event, onEventHandle });
+      for (const eventType of ["user.created", "user.updated"]) {
+        await t.mutation(api.lib.onWebhookEvent, {
+          event: makeEvent(eventType, makeUser()),
+          onEventHandle,
+        });
+      }
+
+      expect(onEvent).toHaveBeenCalledTimes(1);
+      const { dbUsers, dbDeletedUsers } = await t.run(async (ctx) => ({
+        dbUsers: await ctx.db.query("users").collect(),
+        dbDeletedUsers: await ctx.db.query("deletedUsers").collect(),
+      }));
+      expect(dbUsers).toHaveLength(0);
+      expect(dbDeletedUsers).toMatchObject([{ id: data.id }]);
+    }
+  );
 
   test("user.created after user.deleted is skipped", async () => {
     const t = initConvexTest();

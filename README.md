@@ -129,6 +129,11 @@ By default the component will handle the following events:
 - `user.updated`
 - `user.deleted`
 
+The `user.deleted` handler also runs when the component never stored the user, for
+example when WorkOS delivers the deletion before the creation. `event.data` is then
+the webhook payload as sent, so only `id` is guaranteed, even though it is typed as
+a full user. When the component has the user stored, its fields fill any gaps.
+
 ```ts
 // convex/auth.ts
 import { AuthKit, type AuthFunctions } from "@convex-dev/workos-authkit";
