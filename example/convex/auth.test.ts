@@ -135,17 +135,29 @@ describe("authKitEvent", () => {
     expect(appUsers).toHaveLength(0);
   });
 
-  test("events for a deleted user do not reach the callback", async () => {
+  test("user.deleted removes an app user without a stored component user", async () => {
     const t = initConvexTest();
     const onEventHandle = await t.run(async () =>
       createFunctionHandle(internal.auth.authKitEvent)
     );
     const user = makeUser();
+    await t.run(async (ctx) => {
+      await ctx.db.insert("users", {
+        authId: user.id,
+        email: user.email,
+        name: "Alice Smith",
+      });
+    });
 
     await t.mutation(components.workOSAuthKit.lib.onWebhookEvent, {
       event: makeEvent("user.deleted", user),
       onEventHandle,
     });
+    const afterDelete = await t.run(async (ctx) => {
+      return ctx.db.query("users").collect();
+    });
+    expect(afterDelete).toHaveLength(0);
+
     await t.mutation(components.workOSAuthKit.lib.onWebhookEvent, {
       event: makeEvent("user.created", user),
       onEventHandle,

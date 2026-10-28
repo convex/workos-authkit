@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Call the `user.deleted` handler even when the component never stored the user (#82)
+
 ## 0.2.10
 
 - Fix deleted user handling and drop the unused `additionalEventTypes` option (#77)

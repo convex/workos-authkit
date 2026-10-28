@@ -119,8 +119,8 @@ async function processEventHandler(
         .withIndex("id", (q) => q.eq("id", id))
         .unique();
       if (!user) {
-        console.warn("user not found, skipping deletion", id);
-        return;
+        console.warn("user not found, forwarding deletion", id);
+        break;
       }
       await ctx.db.delete("users", user._id);
       // The callback data is typed as a whole user, so fill anything the
