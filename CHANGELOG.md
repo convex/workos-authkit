@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Call the `user.deleted` handler even when the component never stored the user (#82)
+## 0.3.0
+
+- Call the `user.deleted` handler even when the component never stored the user (#82) @dominicwild
 
 ## 0.2.10
 
