@@ -23,8 +23,7 @@ import type { ComponentApi } from "../component/_generated/component.js";
 import { vEvent } from "../component/lib.js";
 
 type WorkOSResponsePayload =
-  | AuthenticationActionResponseData
-  | UserRegistrationActionResponseData;
+  AuthenticationActionResponseData | UserRegistrationActionResponseData;
 
 type Options = {
   authFunctions?: AuthFunctions;
