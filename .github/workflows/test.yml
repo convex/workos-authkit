@@ -4,31 +4,53 @@ concurrency:
   cancel-in-progress: true
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
   pull_request:
     branches: ["**"]
+
+permissions: {}
 
 jobs:
   check:
     name: Test and lint
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    permissions:
+      contents: read
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Node setup
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           cache-dependency-path: package.json
-          node-version: "24.x"
+          node-version: "24.22.1"
           cache: "npm"
 
-      - run: |
+      - name: Install and build
+        run: |
           npm ci
           npm run build
-          npx pkg-pr-new publish || "echo 'Failed to publish package - is pkg-pr-new set up?'"
-          npm run test
-          npm run typecheck
-          npm run lint
+      - name: Test
+        run: npm run check
+      - name: Configure local example credentials
+        run: |
+          npx convex init
+          npx convex env set WORKOS_CLIENT_ID client_test_local
+          npx convex env set WORKOS_API_KEY sk_test_local
+          npx convex env set WORKOS_WEBHOOK_SECRET whsec_test_local
+          npx convex env set WORKOS_ACTION_SECRET local-test-action-secret
+      - name: Run E2E smoke test and verify generated code
+        env:
+          CONVEX_DISABLE_TELEMETRY: "1"
+        run: |
+          npm run test:e2e
+          git diff --exit-code -- src/component/_generated example/convex/_generated
+          test -z "$(git ls-files --others --exclude-standard src/component/_generated example/convex/_generated)"
+      - name: Publish package for testing branch
+        run: npx pkg-pr-new publish || echo "pkg-pr-new failed"

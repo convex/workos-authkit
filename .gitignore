@@ -24,3 +24,4 @@ AGENTS.md
 CLAUDE.md
 skills-lock.json
 example/convex/_generated/ai
+.convex/
