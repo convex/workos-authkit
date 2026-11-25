@@ -97,9 +97,9 @@
   "types": "./dist/client/index.d.ts",
   "module": "./dist/client/index.js",
   "dependencies": {
-    "@convex-dev/workflow": "^0.4.0",
+    "@convex-dev/workflow": "^0.5.0",
     "@convex-dev/workos": "^0.0.3",
-    "@convex-dev/workpool": "^0.4.4",
+    "@convex-dev/workpool": "^0.4.16 || ^0.5.0",
     "convex-helpers": "^0.1.128",
     "type-fest": "^5.1.0"
   }
